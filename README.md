@@ -52,10 +52,6 @@ way.
   The `compile` field is a `true/false` field and specifies whether workloads need to
   be compiled beforehand using `make` or not.
 
-- Benchmark directories may additionally contain a Python model
-for the benchmark cost, in a file called "model_cost.py". It should
-support the same parameter flags as the benchmark itself.
-
 ## Running instructions
 
 The main script is `run_benchmarks.py` in the root directory. It takes the following
@@ -65,56 +61,24 @@ arguments:
 - `-f / --csv_filename`: Specifies the output file for dumped experiment results.
 - `-b / --benchmarks`: Comma-separated list of benchmarks that should be run (must be
   a subset of benchmarks listed in the configuration file).
-- `-m / --cost_model`: A flag specifying whether the cost model should be executed in place of the benchmark.
 - `-v / --verbose`: A flag specifying whether to print verbose statistics.
 
 Sample output looks like this:
 ```bash
-$ python run_benchmarks.py --config config.json -n 2 -f output.csv
+$ python run_benchmarks.py -b crime_index -n 5 -f results.csv -v
 ++++++++++++++++++++++++++++++++++++++
-matrix_multiplication
+crime_index
 ++++++++++++++++++++++++++++++++++++++
-b = 64, n = 512
-Transposed: 0.2533 +/- 0.0017 seconds
-Unblocked: 0.3360 +/- 0.0035 seconds
-Blocked: 0.1607 +/- 0.0002 seconds
+s=1, f=data/us_cities_states_counties_sf=%d.csv
+Grizzly: 1.4256 +/- 0.0102 seconds
+Pandas: 0.0229 +/- 0.0009 seconds
 
-b = 64, n = 1024
-Transposed: 2.0677 +/- 0.0004 seconds
-Unblocked: 13.0135 +/- 1.2649 seconds
-Blocked: 2.0570 +/- 0.0070 seconds
+s=10, f=data/us_cities_states_counties_sf=%d.csv
+Grizzly: 2.1567 +/- 0.2303 seconds
+Pandas: 0.0725 +/- 0.0066 seconds
 
-b = 128, n = 512
-Transposed: 0.2546 +/- 0.0032 seconds
-Unblocked: 0.3312 +/- 0.0066 seconds
-Blocked: 0.2699 +/- 0.0033 seconds
-
-b = 128, n = 1024
-Transposed: 2.0920 +/- 0.0211 seconds
-Unblocked: 12.2830 +/- 1.5111 seconds
-Blocked: 2.0394 +/- 0.0054 seconds
-
-++++++++++++++++++++++++++++++++++++++
-swapped_loops
-++++++++++++++++++++++++++++++++++++++
-k = 1, n = 1000
-Cached: 0.0002 +/- 0.0000 seconds
-Original: 0.0002 +/- 0.0000 seconds
-Interchanged: 0.0003 +/- 0.0000 seconds
-
-k = 1, n = 10000
-Cached: 0.0017 +/- 0.0000 seconds
-Original: 0.0018 +/- 0.0001 seconds
-Interchanged: 0.0032 +/- 0.0001 seconds
-
-k = 10, n = 1000
-Cached: 0.0017 +/- 0.0000 seconds
-Original: 0.0018 +/- 0.0003 seconds
-Interchanged: 0.0027 +/- 0.0004 seconds
-
-k = 10, n = 10000
-Cached: 0.0166 +/- 0.0004 seconds
-Original: 0.0171 +/- 0.0008 seconds
-Interchanged: 0.0263 +/- 0.0027 seconds
+s=100, f=data/us_cities_states_counties_sf=%d.csv
+Grizzly: 6.8954 +/- 0.2109 seconds
+Pandas: 0.6040 +/- 0.0640 seconds
 
 ```
