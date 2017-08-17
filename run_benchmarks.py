@@ -30,14 +30,10 @@ def parse_output(output):
         times.append((scheme, time))
     return times
 
-def run_benchmark(bench_name, params, num_iterations, csv_filename, model=False, verbose=True):
+def run_benchmark(bench_name, params, num_iterations, csv_filename, verbose=True):
     csvf = open(csv_filename, 'a+')
     writer = csv.writer(csvf, delimiter='\t')
-    logfile = ''
-    if model:
-       logfile = "benchmarks/%s/output-model.log" % bench_name
-    else:
-        logfile = "benchmarks/%s/output.log" % bench_name
+    logfile = "benchmarks/%s/output.log" % bench_name
 
     with open(logfile, 'w') as nf:
         nf.write("++++++++++++++++++++++++++++++++++++++\n")
@@ -58,44 +54,26 @@ def run_benchmark(bench_name, params, num_iterations, csv_filename, model=False,
             nf.write("\n")
 
         times = {}
-        if not model:
-            for i in xrange(num_iterations):
-                output = subprocess.check_output("benchmarks/%s/bench %s 2>/dev/null"
-                                                 % (benchmark, flag_settings),
-                                                 shell=True)
-                with open(logfile, 'a') as nf:
-                    nf.write(output)
-                    nf.write("\n")
-                parsed_output = parse_output(output)
-                for (scheme, time) in parsed_output:
-                    if scheme not in times:
-                        times[scheme] = list()
-                    times[scheme].append(time)
+        for i in xrange(num_iterations):
+            output = subprocess.check_output("benchmarks/%s/bench %s 2>/dev/null"
+                                             % (benchmark, flag_settings),
+                                             shell=True)
+            with open(logfile, 'a') as nf:
+                nf.write(output)
+                nf.write("\n")
+            parsed_output = parse_output(output)
+            for (scheme, time) in parsed_output:
+                if scheme not in times:
+                    times[scheme] = list()
+                times[scheme].append(time)
 
-        costs = {}
-        output = subprocess.check_output("PYTHONPATH=. python benchmarks/%s/model_cost.py %s"
-                                         % (benchmark, flag_settings),
-                                         shell=True)
-        with open(logfile, 'a') as nf:
-            nf.write(output)
-            nf.write("\n")
-        parsed_output = parse_output(output)
-        for (scheme, cost) in parsed_output:
-            costs[scheme] = cost
-
-        for scheme in costs:
+        for scheme in times:
             if verbose:
-                if not model:
-                    time_mean = np.mean(times[scheme])
-                    time_stddev = np.std(times[scheme])
-                    print "%s: %.4f +/- %.4f seconds, cost: %f" % (scheme, time_mean, time_stddev, costs[scheme])
-                    sys.stdout.flush()
-                else:
-                    print "%s: cost: %f" % (scheme, costs[scheme])
-                    sys.stdout.flush()
-            row = [benchmark, scheme, csv_settings, costs[scheme]]
-            if not model:
-                row.extend([str(elem) for elem in times[scheme]])
+                time_mean = np.mean(times[scheme])
+                time_stddev = np.std(times[scheme])
+                print "%s: %.4f +/- %.4f seconds" % (scheme, time_mean, time_stddev)
+                sys.stdout.flush()
+            row.extend([str(elem) for elem in times[scheme]])
             writer.writerow(row)
         if verbose:
             print    
@@ -149,8 +127,6 @@ if __name__ == '__main__':
                         help="Name of CSV to dump output in")
     parser.add_argument('-b', "--benchmarks", type=str, default=None, nargs='+',
                         help="List of benchmarks to run")
-    parser.add_argument('-m', "--cost_model", action='store_true',
-                        help="Run cost model only")
     parser.add_argument('-v', "--verbose", action='store_true',
                         help="Output verbose statistics")
 
@@ -160,15 +136,13 @@ if __name__ == '__main__':
     num_iterations = opt_dict["num_iterations"]
     scale_factor = opt_dict["scale_factor"]
     csv_filename = opt_dict["csv_filename"]
-    model = opt_dict["cost_model"]
     open(csv_filename, 'w').close() ## erase current contents ##
 
     csvf = open(csv_filename, 'a+')
     writer = csv.writer(csvf, delimiter='\t')
     row = ["Benchmark", "Scheme", "Parameters", "Model cost"]
-    if not model:
-       for i in xrange(num_iterations):
-           row.append("Trial %d" % (i + 1))
+    for i in xrange(num_iterations):
+        row.append("Trial %d" % (i + 1))
     writer.writerow(row)
     csvf.close()
 
@@ -193,4 +167,4 @@ if __name__ == '__main__':
 
         params.update(scaled_params)
 
-        run_benchmark(benchmark, params, num_iterations, csv_filename, model, opt_dict['verbose'])
+        run_benchmark(benchmark, params, num_iterations, csv_filename, opt_dict['verbose'])
