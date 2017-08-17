@@ -1,0 +1,7 @@
+{
+    "compile":false,
+    "params": {
+        "f": ["data/311-service-requests-sf=%d.csv"],
+        "s": [1, 10, 100]
+    }
+}
