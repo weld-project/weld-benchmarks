@@ -55,7 +55,7 @@ def run_benchmark(bench_name, params, num_iterations, csv_filename, verbose=True
 
         times = {}
         for i in xrange(num_iterations):
-            output = subprocess.check_output("benchmarks/%s/bench %s 2>/dev/null"
+            output = subprocess.check_output("cd benchmarks/%s; ./bench %s 2>/dev/null"
                                              % (benchmark, flag_settings),
                                              shell=True)
             with open(logfile, 'a') as nf:
