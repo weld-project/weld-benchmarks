@@ -1,0 +1,12 @@
+{
+    "compile":true,
+    "params": {
+        "n": {
+            "start":100000,
+            "stop":100000000,
+            "n":10,
+            "scale":"log10",
+            "type":"int"
+        }
+    }
+}

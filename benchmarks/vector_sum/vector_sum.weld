@@ -1,0 +1,1 @@
+|x:vec[i32]| result(for(x, merger[i32,+],|b,i,e| merge(b, e)))
