@@ -17,30 +17,14 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/time.h>
-#include <omp.h>
 
 #include "weld.h"
-
-#ifndef NUM_PARALLEL_THREADS
-    #define NUM_PARALLEL_THREADS 4
-#endif
 
 // The generated input data.
 struct gen_data {
     int64_t size;
     int32_t *x;
     int32_t a;
-};
-
-// An input data item represented as in a row format.
-struct lineitems {
-    int8_t *return_flags;
-    int8_t *line_statuses;
-    float *quantities;
-    float *extended_prices;
-    float *discounts;
-    int32_t *shipdates;
-    float *taxes;
 };
 
 template <typename T>
