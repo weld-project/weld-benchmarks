@@ -264,6 +264,7 @@ int main(int argc, char **argv) {
     free_generated_data(&d);
 
     d = generate_data(num_items, prob);
+    gettimeofday(&start, 0);
     result = run_query(&d);
     gettimeofday(&end, 0);
     timersub(&end, &start, &diff);
