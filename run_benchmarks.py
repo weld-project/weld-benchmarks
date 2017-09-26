@@ -7,10 +7,12 @@ import numpy as np
 import subprocess
 import sys
 
+import utils
+
 def labeled_params(param_dict):
     ''' {p:[v]} -> [(p, v1), ..., (p, vn)] '''
     ret = []
-    for p, vlist in param_dict.iteritems():
+    for p, vlist in param_dict.items():
         p_list = []
         for val in vlist:
             p_list.append((p, val))
@@ -30,16 +32,40 @@ def parse_output(output):
         times.append((scheme, time))
     return times
 
-def run_benchmark(bench_name, params, num_iterations, csv_filename, verbose=True):
+def run_benchmark(benchmark, num_iterations, csv_filename, default, verbose):
+    if verbose:
+        print("++++++++++++++++++++++++++++++++++++++")
+        print(benchmark)
+        print("++++++++++++++++++++++++++++++++++++++")
+
+    b_config = read_config('benchmarks/%s/config.json' % benchmark)
+
+    if b_config['compile'] == True:
+        compile_benchmark(benchmark)
+
+    if default:
+        params = b_config.get('default_params', {})
+        params = {key: [value] for (key, value) in params.items()}
+    else:
+        params = b_config.get('params', {}).copy() ## we'll mutate this with scaled values ##
+        params = expand_params(params)
+
+        scaled_params = b_config.get('scaled_params', {})
+        scaled_params = expand_params(scaled_params)
+        scaled_params = scale_params(scaled_params, scale_factor)
+
+        params.update(scaled_params)
+
     csvf = open(csv_filename, 'a+')
     writer = csv.writer(csvf, delimiter='\t')
-    logfile = "benchmarks/%s/output.log" % bench_name
+    logfile = "benchmarks/%s/output.log" % benchmark
 
     with open(logfile, 'w') as nf:
         nf.write("++++++++++++++++++++++++++++++++++++++\n")
-        nf.write(bench_name + "\n")
+        nf.write(benchmark + "\n")
         nf.write("++++++++++++++++++++++++++++++++++++++\n\n")
 
+    all_times = list()
     param_settings = itertools.product(*labeled_params(params))
     for s in param_settings:
         log_settings  = (', '.join(['%s=%s'  % (x[0], str(x[1])) for x in s]))
@@ -47,17 +73,21 @@ def run_benchmark(bench_name, params, num_iterations, csv_filename, verbose=True
         flag_settings = ( ' '.join(['-%s %s' % (x[0], str(x[1])) for x in s]))
         
         if verbose:
-            print log_settings
+            print(log_settings)
 
         with open(logfile, 'a') as nf:
             nf.write(log_settings)
             nf.write("\n")
 
         times = {}
-        for i in xrange(num_iterations):
+        for i in range(num_iterations):
             output = subprocess.check_output("cd benchmarks/%s; ./bench %s 2>/dev/null"
                                              % (benchmark, flag_settings),
                                              shell=True)
+            try:
+                output = output.decode('utf-8')
+            except:
+                pass
             with open(logfile, 'a') as nf:
                 nf.write(output)
                 nf.write("\n")
@@ -68,17 +98,20 @@ def run_benchmark(bench_name, params, num_iterations, csv_filename, verbose=True
                 times[scheme].append(time)
 
         for scheme in times:
+            row = [benchmark, scheme, log_settings]
             if verbose:
                 time_mean = np.mean(times[scheme])
                 time_stddev = np.std(times[scheme])
-                print "%s: %.4f +/- %.4f seconds" % (scheme, time_mean, time_stddev)
+                print("%s: %.4f +/- %.4f seconds" % (scheme, time_mean, time_stddev))
                 sys.stdout.flush()
             row.extend([str(elem) for elem in times[scheme]])
             writer.writerow(row)
         if verbose:
-            print    
-        
+            print("\n")
+        all_times.append(times)
+    
     csvf.close()
+    return all_times
 
 def read_config(config_file):
     return json.load(open(config_file, 'r'))
@@ -88,14 +121,14 @@ def compile_benchmark(benchmark):
  
 def scale_params(scaled_params_dict, scale_factor):
     ret = {}
-    for p, vlist in scaled_params_dict.iteritems():
+    for p, vlist in scaled_params_dict.items():
         ret[p] = [v*scale_factor for v in vlist]
     return ret
 
 def expand_params(params_dict):
     ''' if params specified by a range, unroll the range into values '''
     ret = {}
-    for p, v in params_dict.iteritems():
+    for p, v in params_dict.items():
         if isinstance(v, dict):
             if v['scale'] == 'linear':
                 ret[p] = np.linspace(v['start'], v['stop'], v['n'])
@@ -131,6 +164,8 @@ if __name__ == '__main__':
                         help="Output verbose statistics")
     parser.add_argument('-d', "--default", action='store_true',
                         help="Use default arguments for every binary")
+    parser.add_argument('-p', "--plot_filename", type=str, default=None,
+                        help="Plot filename")
 
     cmdline_args = parser.parse_args()
     opt_dict = vars(cmdline_args)
@@ -138,40 +173,25 @@ if __name__ == '__main__':
     num_iterations = opt_dict["num_iterations"]
     scale_factor = opt_dict["scale_factor"]
     csv_filename = opt_dict["csv_filename"]
+    default = opt_dict["default"]
+    verbose = opt_dict["verbose"]
     open(csv_filename, 'w').close() ## erase current contents ##
 
     csvf = open(csv_filename, 'a+')
     writer = csv.writer(csvf, delimiter='\t')
-    row = ["Benchmark", "Scheme", "Parameters", "Model cost"]
-    for i in xrange(num_iterations):
+    row = ["Benchmark", "Scheme", "Parameters"]
+    for i in range(num_iterations):
         row.append("Trial %d" % (i + 1))
     writer.writerow(row)
     csvf.close()
 
     benchmarks = opt_dict["benchmarks"]
 
+    all_times = []
     for benchmark in benchmarks:
-        if opt_dict["verbose"]:
-            print "++++++++++++++++++++++++++++++++++++++"
-            print benchmark
-            print "++++++++++++++++++++++++++++++++++++++"
+        times = run_benchmark(benchmark, num_iterations, csv_filename, default, verbose)
+        all_times.append((benchmark, times[0]))  # Only consider first parameter for plotting
 
-        b_config = read_config('benchmarks/%s/config.json' % benchmark)
-
-        if b_config['compile'] == True:
-            compile_benchmark(benchmark)
-
-        if opt_dict["default"]:
-            params = b_config.get('default_params', {})
-            params = {key: [value] for (key, value) in params.items()}
-        else:
-            params = b_config.get('params', {}).copy() ## we'll mutate this with scaled values ##
-            params = expand_params(params)
-
-            scaled_params = b_config.get('scaled_params', {})
-            scaled_params = expand_params(scaled_params)
-            scaled_params = scale_params(scaled_params, scale_factor)
-
-            params.update(scaled_params)
-
-        run_benchmark(benchmark, params, num_iterations, csv_filename, opt_dict['verbose'])
+    plot_filename = opt_dict["plot_filename"]
+    if plot_filename is not None:
+        utils.plot(all_times, plot_filename)
