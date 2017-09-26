@@ -67,8 +67,15 @@ int32_t run_query_weld(struct gen_data *d) {
     fread(program, sizeof(char), string_size, fptr);
     program[string_size] = '\0';
 
+    struct timeval start, end, diff;
+
+    gettimeofday(&start, 0);
     weld_module_t m = weld_module_compile(program, conf, e);
     weld_conf_free(conf);
+    gettimeofday(&end, 0);
+    timersub(&end, &start, &diff);
+    printf("Weld compile time: %ld.%06ld\n",
+            (long) diff.tv_sec, (long) diff.tv_usec);
 
     if (weld_error_code(e)) {
         const char *err = weld_error_message(e);
@@ -76,6 +83,7 @@ int32_t run_query_weld(struct gen_data *d) {
         exit(1);
     }
 
+   gettimeofday(&start, 0);
    struct args args;
    args.x = make_weld_vector<int32_t>(d->x, d->size);
    args.a = d->a;
@@ -99,6 +107,11 @@ int32_t run_query_weld(struct gen_data *d) {
 
     weld_error_free(e);
     weld_module_free(m);
+
+    gettimeofday(&end, 0);
+    timersub(&end, &start, &diff);
+    printf("Weld: %ld.%06ld (result=%d)\n",
+            (long) diff.tv_sec, (long) diff.tv_usec, final_result);
 
     return final_result;
 }
@@ -149,21 +162,16 @@ int main(int argc, char **argv) {
     struct timeval start, end, diff;
 
     gettimeofday(&start, 0);
-    result = run_query_weld(&d);
+    result = run_query(&d);
     gettimeofday(&end, 0);
     timersub(&end, &start, &diff);
-    printf("Weld: %ld.%06ld (result=%d)\n",
+    printf("Single-threaded C++: %ld.%06ld (result=%d)\n",
             (long) diff.tv_sec, (long) diff.tv_usec, result);
 
     free(d.x);
     d = generate_data(size);
 
-    gettimeofday(&start, 0);
-    result = run_query(&d);
-    gettimeofday(&end, 0);
-    timersub(&end, &start, &diff);
-    printf("C++: %ld.%06ld (result=%d)\n",
-            (long) diff.tv_sec, (long) diff.tv_usec, result);
+    result = run_query_weld(&d);
 
     return 0;
 }

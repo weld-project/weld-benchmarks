@@ -129,6 +129,8 @@ if __name__ == '__main__':
                         help="List of benchmarks to run")
     parser.add_argument('-v', "--verbose", action='store_true',
                         help="Output verbose statistics")
+    parser.add_argument('-d', "--default", action='store_true',
+                        help="Use default arguments for every binary")
 
     cmdline_args = parser.parse_args()
     opt_dict = vars(cmdline_args)
@@ -155,16 +157,21 @@ if __name__ == '__main__':
             print "++++++++++++++++++++++++++++++++++++++"
 
         b_config = read_config('benchmarks/%s/config.json' % benchmark)
+
         if b_config['compile'] == True:
             compile_benchmark(benchmark)
-        
-        params = b_config.get('params', {}).copy() ## we'll mutate this with scaled values ##
-        params = expand_params(params)
-        
-        scaled_params = b_config.get('scaled_params', {})
-        scaled_params = expand_params(scaled_params)
-        scaled_params = scale_params(scaled_params, scale_factor)
 
-        params.update(scaled_params)
+        if opt_dict["default"]:
+            params = b_config.get('default_params', {})
+            params = {key: [value] for (key, value) in params.items()}
+        else:
+            params = b_config.get('params', {}).copy() ## we'll mutate this with scaled values ##
+            params = expand_params(params)
+
+            scaled_params = b_config.get('scaled_params', {})
+            scaled_params = expand_params(scaled_params)
+            scaled_params = scale_params(scaled_params, scale_factor)
+
+            params.update(scaled_params)
 
         run_benchmark(benchmark, params, num_iterations, csv_filename, opt_dict['verbose'])

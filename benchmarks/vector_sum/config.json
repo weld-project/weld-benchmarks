@@ -8,5 +8,8 @@
             "scale":"log10",
             "type":"int"
         }
+    },
+    "default_params": {
+        "n": 10000000
     }
 }

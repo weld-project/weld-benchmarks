@@ -9,5 +9,9 @@
             "scale":"log10",
             "type":"int"
         }
+    },
+    "default_params": {
+        "p": 1.0,
+        "n": 10000000
     }
 }
