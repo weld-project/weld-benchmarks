@@ -47,7 +47,6 @@ def plot(all_times, filename=None):
     plt.xticks(ticks, tick_labels)
 
     if filename is not None:
-        with PdfPages(filename) as pdf:
-            pdf.savefig(bbox_extra_artists=(leg,), bbox_inches='tight')
+        plt.savefig(filename, bbox_inches='tight')
 
     plt.show()
