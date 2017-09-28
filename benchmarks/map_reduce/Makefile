@@ -14,7 +14,7 @@ LIBS=-lweld
 .PHONY: all clean
 
 all:
-	${CC} ${LDFLAGS} ${LIBS} map_reduce.cpp ${CPPFLAGS} -o bench
+	${CC} ${LDFLAGS} map_reduce.cpp ${CPPFLAGS} -o bench ${LIBS}
 
 clean:
 	rm -f bench
