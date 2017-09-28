@@ -45,12 +45,12 @@ def crime_index_grizzly(requests):
     # Aggregate "crime index" scores by state
     data_big_cities_grouped_df = data_big_cities_new_df.groupby(
         "State short").sum()
-    return data_big_cities_grouped_df.evaluate(verbose=False).to_pandas()["Crime index"]
+    return data_big_cities_grouped_df.evaluate(verbose=True).to_pandas()["Crime index"]
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description="Run the Black Scholes benchmark"
+        description="Group states by their crime index"
     )
     parser.add_argument('-f', "--input_file_template", type=str, required=True,
                         help="Input file to use")
@@ -72,8 +72,8 @@ if __name__ == '__main__':
 
     data = pd.read_csv(input_file, delimiter='|')
     data.dropna(inplace=True)
-    data = gr.DataFrameWeld(data)
     start = time.time()
+    data = gr.DataFrameWeld(data)
     result = crime_index_grizzly(data)
     end = time.time()
     result = sum(sorted(result, reverse=True)[:3])

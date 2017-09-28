@@ -50,5 +50,8 @@ if __name__ == '__main__':
     print "Pandas: %.4f (result=%.4f)" % (end - start, result)
 
     raw_requests = pd.read_csv(input_file, na_values=na_values, dtype={'Incident Zip': str})
+    start = time.time()
     requests = gr.DataFrameWeld(raw_requests)
     result = data_cleaning_grizzly(requests)
+    end = time.time()
+    print "Grizzly: %.4f (result=%.4f)" % (end - start, result)
