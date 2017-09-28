@@ -5,6 +5,7 @@ import pandas as pd
 import grizzly.grizzly as gr
 import numpy as np
 import grizzly.numpy_weld as npw
+import os
 import time
 
 def crime_index_pandas(requests):
@@ -59,7 +60,7 @@ if __name__ == '__main__':
 
     cmdline_args = parser.parse_args()
     opt_dict = vars(cmdline_args)
-    input_file_template = opt_dict["input_file_template"]
+    input_file_template = os.path.join("../..", opt_dict["input_file_template"])
     input_file = input_file_template % opt_dict["scale_factor"]
 
     data = pd.read_csv(input_file, delimiter='|')

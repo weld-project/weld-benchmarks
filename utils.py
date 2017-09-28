@@ -13,6 +13,7 @@ colors = ['#002A5E', '#FD151B', '#8EBA42', '#348ABD', '#988ED5', '#777777', '#8E
 # Helper function to plot results.
 def plot(all_times, filename=None):
     plt.figure(figsize=(15, 8))
+    plt.xticks(rotation=30)
     xpos = 0.0
     ticks = []
     tick_labels = []

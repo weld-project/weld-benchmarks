@@ -81,7 +81,7 @@ def run_benchmark(benchmark, num_iterations, csv_filename, default, verbose):
 
         times = {}
         for i in range(num_iterations):
-            output = subprocess.check_output("cd benchmarks/%s; ./bench %s"
+            output = subprocess.check_output("cd benchmarks/%s; ./bench %s 2>/dev/null"
                                              % (benchmark, flag_settings),
                                              shell=True)
             try:
