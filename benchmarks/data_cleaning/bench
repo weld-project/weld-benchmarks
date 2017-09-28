@@ -4,6 +4,7 @@ import argparse
 import pandas as pd
 import grizzly.grizzly as gr
 import numpy as np
+import os
 import time
 
 def data_cleaning_pandas(requests):
@@ -24,7 +25,7 @@ def data_cleaning_grizzly(requests):
     zero_zips = requests['Incident Zip'] == '00000'
     requests['Incident Zip'][zero_zips] = "nan"
 
-    return len(requests['Incident Zip'].unique().evaluate(verbose=False))
+    return len(requests['Incident Zip'].unique().evaluate(verbose=True))
 
 
 if __name__ == '__main__':
@@ -38,7 +39,7 @@ if __name__ == '__main__':
 
     cmdline_args = parser.parse_args()
     opt_dict = vars(cmdline_args)
-    input_file_template = opt_dict["input_file_template"]
+    input_file_template = os.path.join("../..", opt_dict["input_file_template"])
     input_file = input_file_template % opt_dict["scale_factor"]
 
     na_values = ['NO CLUE', 'N/A', '0']
@@ -50,7 +51,4 @@ if __name__ == '__main__':
 
     raw_requests = pd.read_csv(input_file, na_values=na_values, dtype={'Incident Zip': str})
     requests = gr.DataFrameWeld(raw_requests)
-    start = time.time()
     result = data_cleaning_grizzly(requests)
-    end = time.time()
-    print "Grizzly: %.4f (result=%.4f)" % (end - start, result)

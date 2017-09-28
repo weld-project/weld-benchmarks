@@ -16,10 +16,13 @@ def plot(all_times, filename=None):
     xpos = 0.0
     ticks = []
     tick_labels = []
-    scheme_ordering = ["Single-threaded C++", "Weld", "Weld compile time"]
+    scheme_ordering = ["Single-threaded C++", "Pandas", "Weld", "Weld compile time"]
     for (benchmark, times) in all_times:
         i = 0
         for scheme in scheme_ordering:
+            if scheme not in times:
+                i += 1
+                continue
             time_list = times[scheme]
             time = sum(time_list) / len(time_list)
             if scheme == 'Weld compile time':
