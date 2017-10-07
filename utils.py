@@ -26,13 +26,8 @@ def plot(all_times, filename=None):
                 continue
             time_list = times[scheme]
             time = sum(time_list) / len(time_list)
-            if scheme == 'Weld compile time':
-                bottom = sum(times['Weld']) / len(times['Weld'])
-                plt.bar(xpos, time, label=scheme, bottom=bottom, color=colors[i])
-            else:
-                plt.bar(xpos, time, label=scheme, color=colors[i])
-            if scheme != 'Weld':
-                xpos += 0.8
+            plt.bar(xpos, time, label=scheme, color=colors[i])
+            xpos += 0.8
             i += 1
         tick_labels.append(benchmark)
         ticks.append(xpos - 1.2)
