@@ -17,7 +17,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/time.h>
-#include <omp.h>
 
 #include "weld.h"
 
@@ -30,7 +29,7 @@ struct gen_data {
     // Number of lineitems in the table.
     int64_t num_items;
     // Probability that the branch in the query will be taken.
-    float prob;
+    double prob;
     // The input data.
     struct lineitems *items;
     // The hash table.
@@ -40,9 +39,9 @@ struct gen_data {
 // An input data item represented as in a row format.
 struct lineitems {
     int32_t *shipdates;
-    float *discounts;
-    float *quantities;
-    float *extended_prices;
+    double *discounts;
+    double *quantities;
+    double *extended_prices;
 };
 
 template <typename T>
@@ -53,9 +52,9 @@ struct weld_vector {
 
 struct args {
     struct weld_vector<int32_t> shipdates;
-    struct weld_vector<float> discounts;
-    struct weld_vector<float> quantities;
-    struct weld_vector<float> extended_prices;
+    struct weld_vector<double> discounts;
+    struct weld_vector<double> quantities;
+    struct weld_vector<double> extended_prices;
 };
 
 template <typename T>
@@ -66,19 +65,22 @@ weld_vector<T> make_weld_vector(T *data, int64_t length) {
     return vector;
 }
 
-float run_query(struct gen_data *d) {
-    float final_result = 0.0;
+double run_query(struct gen_data *d) {
+    double final_result = 0.0;
     for (int i = 0; i < d->num_items; i++) {
         struct lineitems *items = d->items;
         if (items->shipdates[i] >= 19940101 && items->shipdates[i] < 19950101 &&
             items->discounts[i] >= 5.0 && items->discounts[i] <= 7.0 && items->quantities[i] < 24.0) {
+            double prev = final_result;
             final_result += (items->discounts[i] * items->extended_prices[i]);
+            //printf("%f * %f = %f (%f)\n", items->discounts[i], items->extended_prices[i], final_result - prev, items->discounts[i] * items->extended_prices[i]);
         }
+
     }
     return final_result;
 }
 
-float run_query_weld(struct gen_data *d) {
+double run_query_weld(struct gen_data *d) {
     // Compile Weld module.
     weld_error_t e = weld_error_new();
     weld_conf_t conf = weld_conf_new();
@@ -109,9 +111,9 @@ float run_query_weld(struct gen_data *d) {
    gettimeofday(&start, 0);
    struct args args;
    args.shipdates = make_weld_vector<int32_t>(d->items->shipdates, d->num_items);
-   args.discounts = make_weld_vector<float>(d->items->discounts, d->num_items);
-   args.quantities = make_weld_vector<float>(d->items->quantities, d->num_items);
-   args.extended_prices = make_weld_vector<float>(d->items->extended_prices, d->num_items);
+   args.discounts = make_weld_vector<double>(d->items->discounts, d->num_items);
+   args.quantities = make_weld_vector<double>(d->items->quantities, d->num_items);
+   args.extended_prices = make_weld_vector<double>(d->items->extended_prices, d->num_items);
 
    weld_value_t weld_args = weld_value_new(&args);
 
@@ -123,8 +125,8 @@ float run_query_weld(struct gen_data *d) {
         printf("Error message: %s\n", err);
         exit(1);
     }
-    float *result_data = (float *) weld_value_data(result);
-    float final_result = *result_data;
+    double *result_data = (double *) weld_value_data(result);
+    double final_result = *result_data;
 
     // Free the values.
     weld_value_free(result);
@@ -147,7 +149,7 @@ float run_query_weld(struct gen_data *d) {
  * @param prob the selectivity of the branch.
  * @return the generated data in a structure.
  */
-struct gen_data generate_data(int num_items, float prob) {
+struct gen_data generate_data(int num_items, double prob) {
     struct gen_data d;
 
     d.num_items = num_items;
@@ -156,9 +158,9 @@ struct gen_data generate_data(int num_items, float prob) {
     d.items = (struct lineitems *)malloc(sizeof(struct lineitems));
 
     d.items->shipdates = (int32_t *) malloc(sizeof(int32_t) * num_items);
-    d.items->discounts = (float *) malloc(sizeof(float) * num_items);
-    d.items->quantities = (float *) malloc(sizeof(float) * num_items);
-    d.items->extended_prices = (float *) malloc(sizeof(float) * num_items);
+    d.items->discounts = (double *) malloc(sizeof(double) * num_items);
+    d.items->quantities = (double *) malloc(sizeof(double) * num_items);
+    d.items->extended_prices = (double *) malloc(sizeof(double) * num_items);
 
     int pass_thres = (int)(prob * 1000000.0);
     srand(1);
@@ -169,11 +171,9 @@ struct gen_data generate_data(int num_items, float prob) {
             d.items->shipdates[i] = FAIL;
         }
 
-        d.items->discounts[i] = 6.0;
-        d.items->quantities[i] = 12.0;
+        d.items->discounts[i] = 6.0f;
+        d.items->quantities[i] = 12.0f;
         d.items->extended_prices[i] = rand() % 100;
-        // TODO: Figure out how to set return flag and linestatus to ensure that
-        // num_buckets constraint is respected.
     }
 
     return d;
@@ -188,11 +188,19 @@ void free_generated_data(struct gen_data *d) {
     free(d->items);
 }
 
+void handler(int sig) {
+    printf("Floating Point Exception\n");
+    exit(0);
+}
+
 int main(int argc, char **argv) {
+
+
+
     // Number of elements in array (should be >> cache size);
-    int num_items = (1E8 / sizeof(int));
+    int num_items = 113058;// (1E8 / sizeof(int));
     // Approx. PASS probability.
-    float prob = 0.01;
+    double prob = 1.0; //0.01;
 
     int ch;
     while ((ch = getopt(argc, argv, "b:n:p:")) != -1) {
@@ -215,20 +223,22 @@ int main(int argc, char **argv) {
     assert(prob >= 0.0 && prob <= 1.0);
 
     struct gen_data d = generate_data(num_items, prob);
-    float result;
+    double result_c, result_weld;
     struct timeval start, end, diff;
 
     gettimeofday(&start, 0);
-    result = run_query(&d);
+    result_c = run_query(&d);
     gettimeofday(&end, 0);
     timersub(&end, &start, &diff);
     printf("Single-threaded C++: %ld.%06ld (result=%.4f)\n",
-            (long) diff.tv_sec, (long) diff.tv_usec, result);
+            (long) diff.tv_sec, (long) diff.tv_usec, result_c);
     free_generated_data(&d);
 
     d = generate_data(num_items, prob);
-    result = run_query_weld(&d);
+    result_weld = run_query_weld(&d);
     free_generated_data(&d);
+
+    printf("Difference: %f\n", result_weld - result_c);
 
     return 0;
 }
