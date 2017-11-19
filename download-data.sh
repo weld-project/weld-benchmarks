@@ -18,7 +18,8 @@ $TEST_HOME/scripts/transform-population-csv \
 $TEST_HOME/scripts/prune-csv \
     -i $DATADIR/us_cities_states_counties.csv \
     -l "State short,Total population,Total adult population,Number of robberies" \
-    -d "|"
+    -d "|" \
+    -n 20
 
 $TEST_HOME/scripts/replicate-csv \
     -i $DATADIR/us_cities_states_counties-pruned.csv \
@@ -36,6 +37,12 @@ $TEST_HOME/scripts/replicate-csv \
     -i $DATADIR/us_cities_states_counties-pruned.csv \
     -o $DATADIR/us_cities_states_counties_sf=100.csv \
     -r 100 \
+    -d "|"
+
+$TEST_HOME/scripts/replicate-csv \
+    -i $DATADIR/us_cities_states_counties-pruned.csv \
+    -o $DATADIR/us_cities_states_counties_sf=500.csv \
+    -r 500 \
     -d "|"
 
 rm $DATADIR/us_cities_states_counties.csv
@@ -62,8 +69,8 @@ $TEST_HOME/scripts/replicate-csv \
 
 $TEST_HOME/scripts/replicate-csv \
     -i $DATADIR/311-service-requests-raw-pruned.csv \
-    -o $DATADIR/311-service-requests-sf=100.csv \
-    -r 100 \
+    -o $DATADIR/311-service-requests-sf=2000.csv \
+    -r 2000 \
     -d ","
 
 rm $DATADIR/311-service-requests-raw.csv

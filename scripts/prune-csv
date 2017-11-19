@@ -3,7 +3,7 @@
 import argparse
 import csv
 
-def transformCSV(inputFile, outputFile, labelsOfInterest, delimiter):
+def transformCSV(inputFile, outputFile, labelsOfInterest, delimiter, numExtraColumns):
   labelsOfInterest = labelsOfInterest.split(",")
   with open(inputFile, 'r') as f1, open(outputFile, 'w') as f2:
     rowId = 0
@@ -19,6 +19,11 @@ def transformCSV(inputFile, outputFile, labelsOfInterest, delimiter):
           row.append("0.0")
         else: 
           row.append(line[columnIdOfInterest])
+      for i in xrange(numExtraColumns):
+        if rowId == 0:
+          row.append("col%d" % i)
+        else:
+          row.append("1.6")
       f2.write("%s\n" % delimiter.join(row))
       rowId += 1
 
@@ -32,6 +37,8 @@ if __name__ == '__main__':
     help="Columns to extract from larger CSV file")
   parser.add_argument('-d', "--delimiter", required=True,
     help="Delimiter in CSV file")
+  parser.add_argument('-n', "--numExtraColumns", type=int, default=0,
+    help="Number of extra columns")
 
   cmdLineArgs = parser.parse_args()
   optDict = vars(cmdLineArgs)
@@ -40,5 +47,6 @@ if __name__ == '__main__':
   outputFile = inputFile.replace(".csv", "-pruned.csv")
   labelsOfInterest = optDict["labelsOfInterest"]
   delimiter = optDict["delimiter"]
+  numExtraColumns = optDict["numExtraColumns"]
 
-  transformCSV(inputFile, outputFile, labelsOfInterest, delimiter)
+  transformCSV(inputFile, outputFile, labelsOfInterest, delimiter, numExtraColumns)
