@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/home/ubuntu/deepak/miniconda2/bin/python
 
 import argparse
 import pandas as pd
@@ -8,16 +8,21 @@ import grizzly.numpy_weld as npw
 import os
 import time
 
-def crime_index_simplified_pandas(requests):
+def crime_index_simplified_pandas(data, num_extra_columns):
     # Get all city information with total population greater than 500,000
     data_big_cities = data[data["Total population"] > 500000]
 
     # Compute "crime index" proportional to
     # (Total population + 2*(Total adult population) - 2000*(Number of robberies)) / 100000
-    data_big_cities_stats = data_big_cities[
-        ["Total population", "Total adult population", "Number of robberies"]].values
+    cols = ["Total population", "Total adult population", "Number of robberies"]
+    array = [1.0, 2.0, -2000.0]
+    for i in xrange(num_extra_columns):
+        cols.append("col%d" % i)
+        array.append(1.0)
+
+    data_big_cities_stats = data_big_cities[cols].values
     predictions = np.dot(data_big_cities_stats, np.array(
-        [1.0, 2.0, -2000.0])) / 100000.0
+        array)) / 100000.0
     data_big_cities["Crime index"] = predictions
 
     # Trim crime index values
@@ -25,16 +30,21 @@ def crime_index_simplified_pandas(requests):
     data_big_cities["Crime index"][data_big_cities["Crime index"] < 0.01] = 0.01
     return data_big_cities["Crime index"].sum()
 
-def crime_index_simplified_grizzly(requests):
+def crime_index_simplified_grizzly(data, num_extra_columns):
     # Get all city information with total population greater than 500,000
     data_big_cities = data[data["Total population"] > 500000]
 
     # Compute "crime index" proportional to
     # (Total population + 2*(Total adult population) - 2000*(Number of robberies)) / 100000
-    data_big_cities_stats = data_big_cities[
-        ["Total population", "Total adult population", "Number of robberies"]].values
+    cols = ["Total population", "Total adult population", "Number of robberies"]
+    array = [1.0, 2.0, -2000.0]
+    for i in xrange(num_extra_columns):
+        cols.append("col%d" % i)
+        array.append(1.0)
+
+    data_big_cities_stats = data_big_cities[cols].values
     predictions = npw.dot(data_big_cities_stats, np.array(
-        [1.0, 2.0, -2000.0], dtype=np.int64)) / 100000.0
+        array, dtype=np.int64)) / 100000.0
     data_big_cities["Crime index"] = predictions
 
     # Trim crime index values
@@ -51,16 +61,19 @@ if __name__ == '__main__':
                         help="Input file to use")
     parser.add_argument('-s', "--scale_factor", type=int, required=True,
                         help="Scale factor")
+    parser.add_argument('-n', "--num_extra_columns", type=int, default=0,
+                        help="Number of extra columns")
 
     cmdline_args = parser.parse_args()
     opt_dict = vars(cmdline_args)
     input_file_template = os.path.join("../..", opt_dict["input_file_template"])
     input_file = input_file_template % opt_dict["scale_factor"]
+    num_extra_columns = opt_dict["num_extra_columns"]
 
     data = pd.read_csv(input_file, delimiter='|')
     data.dropna(inplace=True)
     start = time.time()
-    result = crime_index_simplified_pandas(data)
+    result = crime_index_simplified_pandas(data, num_extra_columns)
     end = time.time()
     print "Pandas: %.4f (result=%.4f)" % (end - start, result)
 
@@ -68,6 +81,6 @@ if __name__ == '__main__':
     data.dropna(inplace=True)
     start = time.time()
     data = gr.DataFrameWeld(data)
-    result = crime_index_simplified_grizzly(data)
+    result = crime_index_simplified_grizzly(data, num_extra_columns)
     end = time.time()
     print "Grizzly: %.4f (result=%.4f)" % (end - start, result)
