@@ -32,7 +32,7 @@ def parse_output(output):
         times.append((scheme, time))
     return times
 
-def run_benchmark(benchmark, num_iterations, csv_filename, default, verbose):
+def run_benchmark(benchmark, num_threads, num_iterations, csv_filename, default, verbose):
     if verbose:
         print("++++++++++++++++++++++++++++++++++++++")
         print(benchmark)
@@ -81,8 +81,8 @@ def run_benchmark(benchmark, num_iterations, csv_filename, default, verbose):
 
         times = {}
         for i in range(num_iterations):
-            output = subprocess.check_output("cd benchmarks/%s; ./bench %s 2>/dev/null"
-                                             % (benchmark, flag_settings),
+            output = subprocess.check_output("cd benchmarks/%s; WELD_NUM_THREADS=%d ./bench %s 2>/dev/null"
+                                             % (benchmark, num_threads, flag_settings),
                                              shell=True)
             try:
                 output = output.decode('utf-8')
@@ -154,6 +154,8 @@ if __name__ == '__main__':
     )
     parser.add_argument('-n', "--num_iterations", type=int, required=True,
                         help="Number of iterations to run each benchmark")
+    parser.add_argument('-t', "--num_threads", type=int, default=1,
+                        help="Number of threads")
     parser.add_argument('-s', "--scale_factor", type=int, default=1,
                         help="Scale factor for scaled parameters")
     parser.add_argument('-f', "--csv_filename", type=str, required=True,
@@ -171,6 +173,7 @@ if __name__ == '__main__':
     opt_dict = vars(cmdline_args)
 
     num_iterations = opt_dict["num_iterations"]
+    num_threads = opt_dict["num_threads"]
     scale_factor = opt_dict["scale_factor"]
     csv_filename = opt_dict["csv_filename"]
     default = opt_dict["default"]
@@ -189,7 +192,7 @@ if __name__ == '__main__':
 
     all_times = []
     for benchmark in benchmarks:
-        times = run_benchmark(benchmark, num_iterations, csv_filename, default, verbose)
+        times = run_benchmark(benchmark, num_threads, num_iterations, csv_filename, default, verbose)
         all_times.append((benchmark, times[0]))  # Only consider first parameter for plotting
 
     plot_filename = opt_dict["plot_filename"]
