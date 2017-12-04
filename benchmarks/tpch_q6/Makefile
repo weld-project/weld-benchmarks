@@ -4,10 +4,10 @@ ifeq ($(UNAME_S),Darwin)
 endif
 
 ifeq ($(UNAME_S),Linux)
-    CC=gcc -fopenmp
+    CC=g++ -fopenmp
 endif
 
-CPPFLAGS=-O3 -march=native -std=c++11 -I$(WELD_HOME)/c
+CPPFLAGS=-O0 -DDEBUG -ggdb -march=native -std=c++11 -I$(WELD_HOME)/c
 LDFLAGS=-L$(WELD_HOME)/target/release
 LIBS=-lweld
 
@@ -15,6 +15,9 @@ LIBS=-lweld
 
 all:
 	${CC} ${LDFLAGS} tpch_q6.cpp ${CPPFLAGS} -o bench ${LIBS}
+
+gen:
+	${CC} ${LDFLAGS} generated.cpp ${CPPFLAGS} -o gen ${LIBS}
 
 clean:
 	rm -f bench
